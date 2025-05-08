@@ -16,6 +16,11 @@ import {
 } from "@mui/material";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
 
+const API_BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? "http://38.242.243.113:4035" // Production API URL
+    : ""; // Empty for development (will use relative paths)
+
 const Login = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -48,7 +53,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/users/login", {
+      const response = await fetch(`${API_BASE_URL}/api/users/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
