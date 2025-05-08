@@ -14,6 +14,7 @@ import {
   useMediaQuery,
   IconButton,
   InputAdornment,
+  Snackbar,
 } from "@mui/material";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
@@ -34,7 +35,12 @@ const Register = () => {
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   // Get user's location on component mount
   useEffect(() => {
@@ -62,12 +68,20 @@ const Register = () => {
     }));
   };
 
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
 
     try {
+      console.log("Sending registration request with data:", {
+        ...formData,
+        password: "[REDACTED]",
+      });
+
       const response = await fetch("/api/users/register", {
         method: "POST",
         headers: {
@@ -77,272 +91,304 @@ const Register = () => {
       });
 
       const data = await response.json();
+      console.log("Registration response:", data);
 
       if (!response.ok) {
         throw new Error(data.message || "Registration failed");
       }
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.data));
+      setSnackbar({
+        open: true,
+        message: "Registration successful! Please login to continue.",
+        severity: "success",
+      });
 
-      navigate("/dashboard");
+      setTimeout(() => {
+        navigate("/");
+      }, 2000);
     } catch (err) {
-      setError(err.message || "An error occurred during registration");
+      console.error("Registration error details:", {
+        message: err.message,
+        stack: err.stack,
+        response: err.response,
+      });
+
+      const errorMessage =
+        err.message || "An error occurred during registration";
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: "error",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Container
-      maxWidth="lg"
-      sx={{
-        height: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        p: { xs: 2, md: 3 },
-      }}
-    >
-      <Paper
-        elevation={3}
+    <>
+      <Container
+        maxWidth="lg"
         sx={{
+          height: "100vh",
           display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-          width: "100%",
-          height: isMobile ? "auto" : "90vh",
-          maxHeight: "600px",
-          overflow: "hidden",
-          borderRadius: 2,
+          alignItems: "center",
+          justifyContent: "center",
+          p: { xs: 2, md: 3 },
         }}
       >
-        {/* Logo Section */}
-        <Box
+        <Paper
+          elevation={3}
           sx={{
-            flex: isMobile ? "none" : 0.8,
-            bgcolor: "background.default",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            p: 2,
-            position: "relative",
-            height: isMobile ? "140px" : "auto",
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.1)",
-              zIndex: 1,
-            },
+            flexDirection: isMobile ? "column" : "row",
+            width: "100%",
+            height: isMobile ? "auto" : "90vh",
+            maxHeight: "600px",
+            overflow: "hidden",
+            borderRadius: 2,
           }}
         >
-          <Box
-            component="img"
-            src="/Leonardo_Phoenix_10_A_modern_sleek_logo_design_featuring_the_t_1.jpg"
-            alt="Company Logo"
-            sx={{
-              width: isMobile ? "100px" : "65%",
-              maxWidth: "250px",
-              height: "auto",
-              objectFit: "contain",
-              zIndex: 2,
-            }}
-          />
-        </Box>
-
-        {/* Registration Form Section */}
-        <Box
-          sx={{
-            flex: isMobile ? "none" : 1.2,
-            display: "flex",
-            flexDirection: "column",
-            p: { xs: 2, md: 2.5 },
-            bgcolor: "background.paper",
-          }}
-        >
+          {/* Logo Section */}
           <Box
             sx={{
-              width: "100%",
-              maxWidth: "400px",
-              mx: "auto",
-              my: "auto",
+              flex: isMobile ? "none" : 0.8,
+              bgcolor: "background.default",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              p: 2,
+              position: "relative",
+              height: isMobile ? "140px" : "auto",
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(0, 0, 0, 0.1)",
+                zIndex: 1,
+              },
             }}
           >
-            <Typography
-              component="h1"
-              variant="h4"
+            <Box
+              component="img"
+              src="/IMG-20250506-WA0004.jpg"
+              alt="Company Logo"
               sx={{
-                mb: 2,
-                fontWeight: 600,
-                textAlign: "center",
-                fontSize: { xs: "1.4rem", md: "1.8rem" },
+                width: isMobile ? "100px" : "65%",
+                maxWidth: "250px",
+                height: "auto",
+                objectFit: "contain",
+                zIndex: 2,
+              }}
+            />
+          </Box>
+
+          {/* Registration Form Section */}
+          <Box
+            sx={{
+              flex: isMobile ? "none" : 1.2,
+              display: "flex",
+              flexDirection: "column",
+              p: { xs: 2, md: 2.5 },
+              bgcolor: "background.paper",
+            }}
+          >
+            <Box
+              sx={{
+                width: "100%",
+                maxWidth: "400px",
+                mx: "auto",
+                my: "auto",
               }}
             >
-              Create Account
-            </Typography>
-
-            {error && (
-              <Alert severity="error" sx={{ width: "100%", mb: 1.5 }}>
-                {error}
-              </Alert>
-            )}
-
-            <Box component="form" onSubmit={handleSubmit}>
-              <Grid container spacing={1.5}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    id="username"
-                    label="Username"
-                    name="username"
-                    autoComplete="username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    id="email"
-                    label="Email Address"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    name="password"
-                    label="Password"
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    autoComplete="new-password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    size="small"
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            aria-label="toggle password visibility"
-                            onClick={() => setShowPassword(!showPassword)}
-                            edge="end"
-                            size="small"
-                          >
-                            {showPassword ? <VisibilityOff /> : <Visibility />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    name="phoneNumber"
-                    label="Phone Number"
-                    type="tel"
-                    id="phoneNumber"
-                    autoComplete="tel"
-                    value={formData.phoneNumber}
-                    onChange={handleChange}
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    name="latitude"
-                    label="Latitude"
-                    type="number"
-                    id="latitude"
-                    value={formData.latitude}
-                    onChange={handleChange}
-                    size="small"
-                    inputProps={{
-                      step: "any",
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    name="longitude"
-                    label="Longitude"
-                    type="number"
-                    id="longitude"
-                    value={formData.longitude}
-                    onChange={handleChange}
-                    size="small"
-                    inputProps={{
-                      step: "any",
-                    }}
-                  />
-                </Grid>
-              </Grid>
-
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                disabled={loading}
+              <Typography
+                component="h1"
+                variant="h4"
                 sx={{
-                  mt: 2,
-                  py: 1,
-                  bgcolor: "primary.main",
-                  "&:hover": {
-                    bgcolor: "primary.dark",
-                  },
+                  mb: 2,
+                  fontWeight: 600,
+                  textAlign: "center",
+                  fontSize: { xs: "1.4rem", md: "1.8rem" },
                 }}
               >
-                {loading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  "Sign Up"
-                )}
-              </Button>
+                Create Account
+              </Typography>
 
-              <Grid container justifyContent="center" sx={{ mt: 1.5 }}>
-                <Grid item>
-                  <Typography variant="body2" sx={{ display: "inline" }}>
-                    Already have an account?{" "}
-                  </Typography>
-                  <Link
-                    component={RouterLink}
-                    to="/"
-                    variant="body2"
-                    sx={{
-                      color: "primary.main",
-                      textDecoration: "none",
-                      fontWeight: 600,
-                      "&:hover": {
-                        textDecoration: "underline",
-                      },
-                    }}
-                  >
-                    Sign In
-                  </Link>
+              <Box component="form" onSubmit={handleSubmit}>
+                <Grid container spacing={1.5}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      required
+                      fullWidth
+                      id="username"
+                      label="Username"
+                      name="username"
+                      autoComplete="username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      required
+                      fullWidth
+                      id="email"
+                      label="Email Address"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      required
+                      fullWidth
+                      name="password"
+                      label="Password"
+                      type={showPassword ? "text" : "password"}
+                      id="password"
+                      autoComplete="new-password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      size="small"
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              aria-label="toggle password visibility"
+                              onClick={() => setShowPassword(!showPassword)}
+                              edge="end"
+                              size="small"
+                            >
+                              {showPassword ? (
+                                <VisibilityOff />
+                              ) : (
+                                <Visibility />
+                              )}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      required
+                      fullWidth
+                      name="phoneNumber"
+                      label="Phone Number"
+                      type="tel"
+                      id="phoneNumber"
+                      autoComplete="tel"
+                      value={formData.phoneNumber}
+                      onChange={handleChange}
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      required
+                      fullWidth
+                      name="latitude"
+                      label="Latitude"
+                      type="number"
+                      id="latitude"
+                      value={formData.latitude}
+                      onChange={handleChange}
+                      size="small"
+                      inputProps={{
+                        step: "any",
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      required
+                      fullWidth
+                      name="longitude"
+                      label="Longitude"
+                      type="number"
+                      id="longitude"
+                      value={formData.longitude}
+                      onChange={handleChange}
+                      size="small"
+                      inputProps={{
+                        step: "any",
+                      }}
+                    />
+                  </Grid>
                 </Grid>
-              </Grid>
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  disabled={loading}
+                  sx={{
+                    mt: 2,
+                    py: 1,
+                    bgcolor: "primary.main",
+                    "&:hover": {
+                      bgcolor: "primary.dark",
+                    },
+                  }}
+                >
+                  {loading ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    "Sign Up"
+                  )}
+                </Button>
+
+                <Grid container justifyContent="center" sx={{ mt: 1.5 }}>
+                  <Grid item>
+                    <Typography variant="body2" sx={{ display: "inline" }}>
+                      Already have an account?{" "}
+                    </Typography>
+                    <Link
+                      component={RouterLink}
+                      to="/"
+                      variant="body2"
+                      sx={{
+                        color: "primary.main",
+                        textDecoration: "none",
+                        fontWeight: 600,
+                        "&:hover": {
+                          textDecoration: "underline",
+                        },
+                      }}
+                    >
+                      Sign In
+                    </Link>
+                  </Grid>
+                </Grid>
+              </Box>
             </Box>
           </Box>
-        </Box>
-      </Paper>
-    </Container>
+        </Paper>
+      </Container>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 
