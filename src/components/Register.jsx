@@ -148,8 +148,8 @@ const Register = () => {
             display: "flex",
             flexDirection: isMobile ? "column" : "row",
             width: "100%",
-            height: isMobile ? "auto" : "90vh",
-            maxHeight: "600px",
+            height: isMobile ? "auto" : "75vh",
+            maxHeight: "520px",
             overflow: "hidden",
             borderRadius: 2,
           }}
@@ -157,35 +157,29 @@ const Register = () => {
           {/* Logo Section */}
           <Box
             sx={{
-              flex: isMobile ? "none" : 0.8,
+              flex: isMobile ? "none" : 1,
               bgcolor: "background.default",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              p: 2,
+              p: 0,
               position: "relative",
               height: isMobile ? "140px" : "auto",
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: "rgba(0, 0, 0, 0.1)",
-                zIndex: 1,
-              },
+              minHeight: isMobile ? "140px" : "100%",
+              width: "100%",
+              overflow: "hidden",
             }}
           >
             <Box
-              component="img"
-              src="/IMG-20250506-WA0004.jpg"
-              alt="Company Logo"
               sx={{
-                width: isMobile ? "100px" : "65%",
-                maxWidth: "250px",
-                height: "auto",
-                objectFit: "contain",
+                width: "100%",
+                height: "100%",
+                minHeight: isMobile ? "140px" : "100%",
+                backgroundImage: 'url("/IMG-20250506-WA0004.jpg")',
+                backgroundSize: isMobile ? "contain" : "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+                backgroundColor: "#1ccfcf",
                 zIndex: 2,
               }}
             />
@@ -194,7 +188,7 @@ const Register = () => {
           {/* Registration Form Section */}
           <Box
             sx={{
-              flex: isMobile ? "none" : 1.2,
+              flex: isMobile ? "none" : 1,
               display: "flex",
               flexDirection: "column",
               p: { xs: 2, md: 2.5 },
@@ -206,7 +200,8 @@ const Register = () => {
                 width: "100%",
                 maxWidth: "400px",
                 mx: "auto",
-                my: "auto",
+                my: 0,
+                py: 2,
               }}
             >
               <Typography

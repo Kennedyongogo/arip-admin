@@ -128,30 +128,24 @@ const Login = () => {
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              p: 3,
+              p: 0,
               position: "relative",
               height: isMobile ? "180px" : "auto",
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: "rgba(0, 0, 0, 0.1)",
-                zIndex: 1,
-              },
+              minHeight: isMobile ? "180px" : "100%",
+              width: "100%",
+              overflow: "hidden",
             }}
           >
             <Box
-              component="img"
-              src="/IMG-20250506-WA0004.jpg"
-              alt="Company Logo"
               sx={{
-                width: isMobile ? "120px" : "70%",
-                maxWidth: "300px",
-                height: "auto",
-                objectFit: "contain",
+                width: "100%",
+                height: "100%",
+                minHeight: isMobile ? "180px" : "100%",
+                backgroundImage: 'url("/IMG-20250506-WA0004.jpg")',
+                backgroundSize: isMobile ? "contain" : "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+                backgroundColor: "#1ccfcf", // fallback color, optional
                 zIndex: 2,
               }}
             />

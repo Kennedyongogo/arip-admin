@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Navbar from "./components/Navbar";
+import MediaMap from "./components/MediaMap";
 import { styled } from "@mui/material/styles";
 import "./App.css";
 import {
@@ -75,7 +76,7 @@ const AppContent = () => {
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Navbar />}>
-            <Route index element={<Main />} />
+            <Route index element={<MediaMap />} />
           </Route>
         </Routes>
       </Router>
