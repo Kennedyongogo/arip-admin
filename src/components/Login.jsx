@@ -13,8 +13,13 @@ import {
   useTheme,
   useMediaQuery,
   Snackbar,
+  FormControlLabel,
+  Switch,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 const API_BASE_URL =
   process.env.NODE_ENV === "production"
@@ -30,6 +35,7 @@ const Login = () => {
     password: "",
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -53,7 +59,8 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/users/login`, {
+      // First try admin login
+      const adminResponse = await fetch(`${API_BASE_URL}/api/admin/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -61,25 +68,55 @@ const Login = () => {
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
+      if (adminResponse.ok) {
+        const adminData = await adminResponse.json();
+        localStorage.setItem("token", adminData.token);
+        localStorage.setItem(
+          "user",
+          JSON.stringify({ ...adminData.data, isAdmin: true })
+        );
+        localStorage.setItem("loginType", "admin");
 
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed");
+        setSnackbar({
+          open: true,
+          message: "Admin login successful! Redirecting to dashboard...",
+          severity: "success",
+        });
+
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 2000);
+        return;
       }
 
-      // Store the token in localStorage
-      localStorage.setItem("token", data.token);
-      // Store user data if needed
-      localStorage.setItem("user", JSON.stringify(data.data));
+      // If admin login fails, try regular user login
+      const userResponse = await fetch(`${API_BASE_URL}/api/users/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-      // Show success message
+      const userData = await userResponse.json();
+
+      if (!userResponse.ok) {
+        throw new Error(userData.message || "Login failed");
+      }
+
+      localStorage.setItem("token", userData.token);
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ ...userData.data, isAdmin: false })
+      );
+      localStorage.setItem("loginType", "user");
+
       setSnackbar({
         open: true,
         message: "Login successful! Redirecting to dashboard...",
         severity: "success",
       });
 
-      // Wait for 2 seconds to show the success message before redirecting
       setTimeout(() => {
         navigate("/dashboard");
       }, 2000);
@@ -100,12 +137,11 @@ const Login = () => {
       <Container
         maxWidth="lg"
         sx={{
-          minHeight: "100vh",
+          height: "100vh",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          py: 2,
-          px: { xs: 2, md: 3 },
+          p: { xs: 2, md: 3 },
         }}
       >
         <Paper
@@ -114,7 +150,8 @@ const Login = () => {
             display: "flex",
             flexDirection: isMobile ? "column" : "row",
             width: "100%",
-            maxHeight: { xs: "100%", md: "600px" },
+            height: isMobile ? "auto" : "75vh",
+            maxHeight: "520px",
             overflow: "hidden",
             borderRadius: 2,
           }}
@@ -125,13 +162,12 @@ const Login = () => {
               flex: isMobile ? "none" : 1,
               bgcolor: "background.default",
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
               p: 0,
               position: "relative",
-              height: isMobile ? "180px" : "auto",
-              minHeight: isMobile ? "180px" : "100%",
+              height: isMobile ? "140px" : "auto",
+              minHeight: isMobile ? "140px" : "100%",
               width: "100%",
               overflow: "hidden",
             }}
@@ -140,12 +176,12 @@ const Login = () => {
               sx={{
                 width: "100%",
                 height: "100%",
-                minHeight: isMobile ? "180px" : "100%",
+                minHeight: isMobile ? "140px" : "100%",
                 backgroundImage: 'url("/IMG-20250506-WA0004.jpg")',
                 backgroundSize: isMobile ? "contain" : "cover",
                 backgroundPosition: "center",
                 backgroundRepeat: "no-repeat",
-                backgroundColor: "#1ccfcf", // fallback color, optional
+                backgroundColor: "#1ccfcf",
                 zIndex: 2,
               }}
             />
@@ -157,26 +193,27 @@ const Login = () => {
               flex: isMobile ? "none" : 1,
               display: "flex",
               flexDirection: "column",
-              p: { xs: 2, md: 3 },
+              p: { xs: 2, md: 2.5 },
               bgcolor: "background.paper",
             }}
           >
             <Box
               sx={{
                 width: "100%",
-                maxWidth: "360px",
+                maxWidth: "400px",
                 mx: "auto",
-                my: "auto",
+                my: 0,
+                py: 2,
               }}
             >
               <Typography
                 component="h1"
                 variant="h4"
                 sx={{
-                  mb: 2.5,
+                  mb: 2,
                   fontWeight: 600,
                   textAlign: "center",
-                  fontSize: { xs: "1.5rem", md: "2rem" },
+                  fontSize: { xs: "1.4rem", md: "1.8rem" },
                 }}
               >
                 Welcome Back
@@ -194,7 +231,7 @@ const Login = () => {
                   autoFocus
                   value={formData.email}
                   onChange={handleChange}
-                  size={isMobile ? "small" : "medium"}
+                  size="small"
                   sx={{ mb: 1.5 }}
                 />
                 <TextField
@@ -203,13 +240,27 @@ const Login = () => {
                   fullWidth
                   name="password"
                   label="Password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   id="password"
                   autoComplete="current-password"
                   value={formData.password}
                   onChange={handleChange}
-                  size={isMobile ? "small" : "medium"}
+                  size="small"
                   sx={{ mb: 1 }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          size="small"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
 
                 <Box sx={{ textAlign: "right", mb: 1.5 }}>
@@ -235,7 +286,7 @@ const Login = () => {
                   variant="contained"
                   disabled={loading}
                   sx={{
-                    py: 1.2,
+                    py: 1,
                     bgcolor: "primary.main",
                     "&:hover": {
                       bgcolor: "primary.dark",
@@ -249,7 +300,7 @@ const Login = () => {
                   )}
                 </Button>
 
-                <Grid container justifyContent="center" sx={{ mt: 2 }}>
+                <Grid container justifyContent="center" sx={{ mt: 1.5 }}>
                   <Grid item>
                     <Typography variant="body2" sx={{ display: "inline" }}>
                       Don't have an account?{" "}

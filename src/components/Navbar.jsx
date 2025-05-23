@@ -23,6 +23,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import PersonIcon from "@mui/icons-material/Person";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import ArticleIcon from "@mui/icons-material/Article";
 
 const drawerWidth = 270;
 
@@ -132,6 +133,11 @@ const Navbar = () => {
       text: "Home",
       icon: <HomeIcon />,
       path: `/dashboard`,
+    },
+    {
+      text: "News",
+      icon: <ArticleIcon />,
+      path: `/dashboard/news`,
     },
     {
       text: "Logout",

@@ -60,6 +60,7 @@ const UserIcon = styled("img")({
 export default function MediaMap() {
   const [map, setMap] = useState(null);
   const [users, setUsers] = useState([]);
+  const [admins, setAdmins] = useState([]);
   const theme = useTheme();
   const popupRef = useRef();
   const overlayRef = useRef();
@@ -100,111 +101,179 @@ export default function MediaMap() {
 
   useEffect(() => {
     if (map) {
-      loadUsers();
+      // Load both users and admins in parallel
+      Promise.all([loadUsers(), loadAdmins()])
+        .then(() => {
+          console.log("Both users and admins loaded");
+          updateMapMarkers();
+        })
+        .catch((error) => {
+          console.error("Error loading data:", error);
+        });
     }
   }, [map]);
 
+  useEffect(() => {
+    if (map) {
+      updateMapMarkers();
+    }
+  }, [map, users, admins]);
+
   const loadUsers = async () => {
     try {
+      console.log("Fetching users...");
       const response = await fetch(`${API_BASE_URL}/api/users`);
       const data = await response.json();
+      console.log("User data received:", data);
       setUsers(data?.data || []);
-
-      if (vectorLayerRef.current) {
-        map.removeLayer(vectorLayerRef.current);
-      }
-
-      const vectorSource = new VectorSource();
-
-      // Track how many users are at each coordinate
-      const coordCount = {};
-
-      data?.data?.forEach((user) => {
-        if (user.latitude && user.longitude) {
-          const lat = parseFloat(user.latitude);
-          const lon = parseFloat(user.longitude);
-          const key = `${lat},${lon}`;
-          if (!coordCount[key]) coordCount[key] = 0;
-          // Offset for each user at the same spot
-          const offset = coordCount[key] * 0.0001;
-          coordCount[key]++;
-
-          const feature = new Feature({
-            geometry: new Point(fromLonLat([lon + offset, lat + offset])),
-            properties: user,
-          });
-
-          feature.setStyle(
-            new Style({
-              image: new Icon({
-                src: "/user-icon.svg", // Make sure to add this icon to your public folder
-                scale: 0.8,
-                anchor: [0.5, 1],
-              }),
-            })
-          );
-
-          vectorSource.addFeature(feature);
-        }
-      });
-
-      const vectorLayer = new VectorLayer({
-        source: vectorSource,
-      });
-
-      vectorLayerRef.current = vectorLayer;
-      map.addLayer(vectorLayer);
-
-      // Add click interaction
-      map.on("click", (event) => {
-        const feature = map.forEachFeatureAtPixel(
-          event.pixel,
-          (feature) => feature
-        );
-        if (feature) {
-          const props = feature.get("properties");
-          // Show styled popup above marker
-          overlayRef.current.setPosition(
-            feature.getGeometry().getCoordinates()
-          );
-          ReactDOM.render(
-            <Box
-              sx={{
-                minWidth: 220,
-                bgcolor: "background.paper",
-                boxShadow: 3,
-                borderRadius: 2,
-                p: 2,
-                border: "1px solid #006400",
-              }}
-            >
-              <Typography variant="h6" color="primary" gutterBottom>
-                {props.username}
-              </Typography>
-              <Typography variant="body2">
-                <b>Email:</b> {props.email}
-                <br />
-                <b>Phone:</b> {props.phoneNumber || "N/A"}
-                <br />
-                <b>Location:</b> {props.latitude}, {props.longitude}
-              </Typography>
-            </Box>,
-            popupRef.current
-          );
-        } else {
-          overlayRef.current.setPosition(undefined);
-          ReactDOM.unmountComponentAtNode(popupRef.current);
-        }
-      });
-
-      // Hide popup on map move
-      map.on("movestart", () => {
-        overlayRef.current.setPosition(undefined);
-        ReactDOM.unmountComponentAtNode(popupRef.current);
-      });
+      return data?.data || [];
     } catch (error) {
       console.error("Error loading users:", error);
+      return [];
     }
+  };
+
+  const loadAdmins = async () => {
+    try {
+      console.log("Fetching admins...");
+      const response = await fetch(`${API_BASE_URL}/api/admin`);
+      const data = await response.json();
+      console.log("Admin data received:", data);
+      setAdmins(data?.data || []);
+      return data?.data || [];
+    } catch (error) {
+      console.error("Error loading admins:", error);
+      return [];
+    }
+  };
+
+  const updateMapMarkers = () => {
+    if (!map) return;
+
+    console.log("Updating map markers...");
+    console.log("Current users:", users);
+    console.log("Current admins:", admins);
+
+    if (vectorLayerRef.current) {
+      map.removeLayer(vectorLayerRef.current);
+    }
+
+    const vectorSource = new VectorSource();
+    const coordCount = {};
+
+    // Add user markers
+    users.forEach((user) => {
+      if (user.latitude && user.longitude) {
+        const lat = parseFloat(user.latitude);
+        const lon = parseFloat(user.longitude);
+        const key = `user_${lat},${lon}`;
+        if (!coordCount[key]) coordCount[key] = 0;
+        const offset = coordCount[key] * 0.0001;
+        coordCount[key]++;
+
+        const feature = new Feature({
+          geometry: new Point(fromLonLat([lon + offset, lat + offset])),
+          properties: { ...user, type: "user" },
+        });
+
+        feature.setStyle(
+          new Style({
+            image: new Icon({
+              src: "/user-icon.svg",
+              scale: 0.8,
+              anchor: [0.5, 1],
+            }),
+          })
+        );
+
+        vectorSource.addFeature(feature);
+      }
+    });
+
+    // Add admin markers
+    admins.forEach((admin) => {
+      console.log("Processing admin:", admin);
+      if (admin.latitude && admin.longitude) {
+        const lat = parseFloat(admin.latitude);
+        const lon = parseFloat(admin.longitude);
+        console.log("Admin coordinates:", lat, lon);
+        const key = `admin_${lat},${lon}`;
+        if (!coordCount[key]) coordCount[key] = 0;
+        const offset = coordCount[key] * 0.0001;
+        coordCount[key]++;
+
+        const feature = new Feature({
+          geometry: new Point(fromLonLat([lon + offset, lat + offset])),
+          properties: { ...admin, type: "admin" },
+        });
+
+        feature.setStyle(
+          new Style({
+            image: new Icon({
+              src: "/admin-icon.svg",
+              scale: 0.8,
+              anchor: [0.5, 1],
+            }),
+          })
+        );
+
+        vectorSource.addFeature(feature);
+      } else {
+        console.log("Admin missing coordinates:", admin);
+      }
+    });
+
+    const vectorLayer = new VectorLayer({
+      source: vectorSource,
+    });
+
+    vectorLayerRef.current = vectorLayer;
+    map.addLayer(vectorLayer);
+
+    // Add click interaction
+    map.on("click", (event) => {
+      const feature = map.forEachFeatureAtPixel(
+        event.pixel,
+        (feature) => feature
+      );
+      if (feature) {
+        const props = feature.get("properties");
+        overlayRef.current.setPosition(feature.getGeometry().getCoordinates());
+        ReactDOM.render(
+          <Box
+            sx={{
+              minWidth: 220,
+              bgcolor: "background.paper",
+              boxShadow: 3,
+              borderRadius: 2,
+              p: 2,
+              border: "1px solid #006400",
+            }}
+          >
+            <Typography variant="h6" color="primary" gutterBottom>
+              {props.username} ({props.type === "admin" ? "Admin" : "User"})
+            </Typography>
+            <Typography variant="body2">
+              <b>Email:</b> {props.email}
+              <br />
+              <b>Phone:</b> {props.phoneNumber || "N/A"}
+              <br />
+              <b>Location:</b> {props.latitude}, {props.longitude}
+            </Typography>
+          </Box>,
+          popupRef.current
+        );
+      } else {
+        overlayRef.current.setPosition(undefined);
+        ReactDOM.unmountComponentAtNode(popupRef.current);
+      }
+    });
+
+    // Hide popup on map move
+    map.on("movestart", () => {
+      overlayRef.current.setPosition(undefined);
+      ReactDOM.unmountComponentAtNode(popupRef.current);
+    });
   };
 
   return (
@@ -221,16 +290,14 @@ export default function MediaMap() {
           variant="title"
           sx={{ color: "primary.main", fontWeight: 600 }}
         >
-          User Locations
+          User and Admin Locations
         </Typography>
       </Box>
 
       <MapContainer>
         <div id="map" className="ol-map" />
-        {/* Popup overlay element for users */}
         <div ref={popupRef} style={{ position: "absolute", zIndex: 1200 }} />
 
-        {/* Legend and Attribution */}
         <Box
           sx={{
             position: "absolute",
@@ -250,6 +317,10 @@ export default function MediaMap() {
               <LegendItem>
                 <UserIcon src="/user-icon.svg" alt="User" />
                 <Typography variant="body2">Users</Typography>
+              </LegendItem>
+              <LegendItem>
+                <UserIcon src="/admin-icon.svg" alt="Admin" />
+                <Typography variant="body2">Admins</Typography>
               </LegendItem>
             </CardContent>
           </MapLegend>
