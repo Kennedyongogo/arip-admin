@@ -132,12 +132,20 @@ const CreateNewsDialog = React.memo(
               >
                 {[
                   "Politics",
+                  "Business & Economy",
                   "Technology",
-                  "Business",
+                  "Health",
+                  "Education",
+                  "Science",
+                  "Environment",
                   "Sports",
                   "Entertainment",
-                  "Health",
-                  "Science",
+                  "Lifestyle",
+                  "Crime & Law",
+                  "Religion & Spirituality",
+                  "International (World)",
+                  "Local/Regional News",
+                  "Editorial & Opinion",
                 ].map((option) => (
                   <MenuItem key={option} value={option}>
                     {option}
@@ -243,6 +251,7 @@ const NewsDetailsDialog = ({
   isAdmin,
   onApprove,
   onReject,
+  actionLoading,
 }) => {
   if (!news) return null;
 
@@ -344,15 +353,17 @@ const NewsDetailsDialog = ({
                   variant="contained"
                   color="success"
                   onClick={() => onApprove(news.id)}
+                  disabled={actionLoading}
                 >
-                  Approve
+                  {actionLoading ? <CircularProgress size={24} /> : "Approve"}
                 </Button>
                 <Button
                   variant="contained"
                   color="error"
                   onClick={() => onReject(news.id)}
+                  disabled={actionLoading}
                 >
-                  Reject
+                  {actionLoading ? <CircularProgress size={24} /> : "Reject"}
                 </Button>
               </Box>
             </Grid>
@@ -367,6 +378,7 @@ const NewsDetailsDialog = ({
 const News = () => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
@@ -506,6 +518,7 @@ const News = () => {
 
   const handleApprove = async (newsId) => {
     try {
+      setActionLoading(true);
       const response = await fetch(
         `${API_BASE_URL}/api/news/admin/${newsId}/approve`,
         {
@@ -516,7 +529,10 @@ const News = () => {
         }
       );
 
-      if (!response.ok) throw new Error("Failed to approve news");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to approve news");
+      }
 
       Swal.fire({
         icon: "success",
@@ -530,7 +546,13 @@ const News = () => {
       fetchNews();
     } catch (error) {
       console.error("Error approving news:", error);
-      Swal.fire("Error", "Failed to approve news article", "error");
+      Swal.fire(
+        "Error",
+        error.message || "Failed to approve news article",
+        "error"
+      );
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -545,11 +567,15 @@ const News = () => {
         if (!value) {
           return "Please provide a reason for rejection";
         }
+        if (value.length < 10) {
+          return "Rejection reason must be at least 10 characters long";
+        }
       },
     });
 
     if (rejectionReason) {
       try {
+        setActionLoading(true);
         const response = await fetch(
           `${API_BASE_URL}/api/news/admin/${newsId}/reject`,
           {
@@ -562,7 +588,10 @@ const News = () => {
           }
         );
 
-        if (!response.ok) throw new Error("Failed to reject news");
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to reject news");
+        }
 
         Swal.fire({
           icon: "success",
@@ -576,7 +605,13 @@ const News = () => {
         fetchNews();
       } catch (error) {
         console.error("Error rejecting news:", error);
-        Swal.fire("Error", "Failed to reject news article", "error");
+        Swal.fire(
+          "Error",
+          error.message || "Failed to reject news article",
+          "error"
+        );
+      } finally {
+        setActionLoading(false);
       }
     }
   };
@@ -693,6 +728,7 @@ const News = () => {
           isAdmin={isAdmin}
           onApprove={handleApprove}
           onReject={handleReject}
+          actionLoading={actionLoading}
         />
       </Box>
     </ThemeProvider>
